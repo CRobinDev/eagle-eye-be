@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Notifikasi Pembayaran - Eagle Eye API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #0d1117;
+            margin: 0;
+            padding: 0;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 620px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #161b22;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.2);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            max-width: 80px;
+        }
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            color: #00c6ff;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+        ul {
+            padding-left: 20px;
+            color: #e0e0e0;
+        }
+        ul li {
+            margin-bottom: 10px;
+        }
+        .highlight {
+            color: #00c6ff;
+            font-weight: bold;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .cta-button:hover {
+            background: linear-gradient(to right, #0072ff, #0050cc);
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 13px;
+            color: #aaaaaa;
+            border-top: 1px solid #2c2f36;
+            padding-top: 15px;
+            text-align: center;
+        }
+        .footer a {
+            color: #00c6ff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="cid:logo.png" alt="Eagle Eye Logo">
+        </div>
+
+        <h1>✅ Pembayaran Berhasil!</h1>
+
+        <p>Halo <span class="highlight">{{ .Fullname }}</span>,</p>
+
+        <p>Terima kasih telah berlangganan layanan API kami di <strong>Eagle Eye</strong>. Berikut detail pembayaran dan langgananmu:</p>
+
+        <ul>
+            <li><strong>💳 Tier Langganan:</strong> {{ .Tier }}</li>
+            <li><strong>📅 Tanggal Pembayaran:</strong> {{ .Date }}</li>
+            <li><strong>🧾 ID Transaksi:</strong> {{ .OrderID }}</li>
+            <li><strong>⏳ Berlaku Hingga:</strong> {{ .ExpiryDate }}</li>
+        </ul>
+
+        <p>Kamu sekarang bisa mulai menggunakan API kami sesuai paket langganan yang dipilih. Silakan kunjungi dashboard kamu untuk mendapatkan <strong>API Key</strong> dan dokumentasi penggunaan.</p>
+
+        <div style="text-align:center;">
+            <a href="{{ .DashboardURL }}" class="cta-button">🚀 Buka Dashboard</a>
+        </div>
+
+        <p>Jika ada pertanyaan atau kendala, tim kami siap membantu kapan saja.</p>
+
+        <div class="footer">
+            <p>Hubungi kami di <a href="lineeranger69@gmail.com">support@eagleeye.io</a></p>
+            <p>&copy; 2025 Eagle Eye API. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
