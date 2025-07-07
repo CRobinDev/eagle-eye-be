@@ -1,0 +1,23 @@
+# Source control and metadata
+.git
+.gitignore
+
+# Environment / secrets
+.env
+
+# Build artifacts
+*.log
+*.out
+*.exe
+*.test
+*.swp
+
+# Docs / misc
+README.md
+LICENSE
+Makefile
+
+# IDE / editor configs
+*.idea
+*.vscode
+*.DS_Store
