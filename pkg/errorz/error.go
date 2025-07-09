@@ -84,6 +84,7 @@ var (
 	ErrPaymentUnsuccess     = NewError(fiber.StatusPaymentRequired, "Payment still pending. Try again later")
 	ErrFailedToSaveCustomer = NewError(fiber.StatusInternalServerError, "Failed to save customer information. Please try again later.")
 	ErrFailedToUpdateAPIKey = NewError(fiber.StatusInternalServerError, "Failed to update api key. Please try again later.")
+	ErrCustomerNotRegistered = NewError(fiber.StatusNotFound, "There is no customer for your account. Please try to subcribe first !")
 
 	// Detection Errors
 	ErrMissingAPIKey              = NewError(fiber.StatusUnauthorized, "Key Empty. Please try again later!")

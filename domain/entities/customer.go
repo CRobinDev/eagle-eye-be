@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"database/sql"
 	"strings"
 	"time"
 
@@ -18,8 +19,8 @@ type Customer struct {
 	ExpiresAt    time.Time    `db:"expires_at"`
 	CreatedAt    time.Time    `db:"created_at"`
 	UpdatedAt    time.Time    `db:"updated_at"`
-	RevokedAt    time.Time    `db:"revoked_at"`
-	LastUsed     time.Time    `db:"last_used"`
+	RevokedAt    sql.NullTime `db:"revoked_at"`
+	LastUsed     sql.NullTime `db:"last_used"`
 
 	Client User    `db:"-"`
 	Order  Payment `db:"-"`

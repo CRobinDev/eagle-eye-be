@@ -98,7 +98,8 @@ func (cr *customerRepository) GetCustomerByID(ctx context.Context, customerID uu
 			squirrel.And{
 				squirrel.Eq{
 					"id":         customerID,
-					"revoked_at": nil},
+					"revoked_at": nil,
+				},
 				squirrel.Expr("expires_at > NOW()"),
 			}).
 		PlaceholderFormat(squirrel.Dollar).
@@ -109,7 +110,7 @@ func (cr *customerRepository) GetCustomerByID(ctx context.Context, customerID uu
 	}
 
 	var customer entities.Customer
-	err = cr.conn.GetContext(ctx, &customer, query, args)
+	err = cr.conn.GetContext(ctx, &customer, query, args...)
 	if err != nil {
 		return entities.Customer{}, err
 	}

@@ -11,6 +11,7 @@ import (
 type ICustomerService interface {
 	GenerateAPIKey(ctx context.Context, req dto.GenerateAPIKeyRequest) (dto.GenerateAPIKeyResponse, error)
 	UpdateAPIKey(ctx context.Context, req dto.GenerateAPIKeyRequest) (dto.GenerateAPIKeyResponse, error)
+	GetCustomerAPIStatus(ctx context.Context, req dto.GetCustomerAPIStatusRequest) (dto.GetCustomerAPIStatusResponse, error)
 }
 
 type ICustomerRepository interface {

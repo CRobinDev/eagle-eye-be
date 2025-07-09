@@ -23,4 +23,5 @@ func (cs *customerHandler) SetEndpoint(router fiber.Router) {
 	v1 := router.Group("/customers")
 	v1.Post("/generate-key", middleware.Authenticate(), cs.GenerateAPIKey)
 	v1.Patch("/update-key", middleware.Authenticate(), cs.UpdateAPIKey)
+	v1.Get("/key-status", middleware.Authenticate(), cs.GetCustomerAPIKeyStatus)
 }
