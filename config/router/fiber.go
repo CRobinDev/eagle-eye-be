@@ -33,15 +33,8 @@ func NewFiber(logger *logrus.Logger) *fiber.App {
 		UnescapePath:     true,
 	})
 
-	app.Use(func(c *fiber.Ctx) error {
-		if c.Method() == fiber.MethodOptions {
-			return c.SendStatus(fiber.StatusNoContent)
-		}
-		return c.Next()
-	})
-
-	app.Use(middleware.Trace())
 	app.Use(middleware.Cors())
+	app.Use(middleware.Trace())
 	app.Use(healthcheck.New())
 	app.Use(middleware.RateLimiter(time.Second, 1000, logger))
 	app.Use(middleware.Logger(logger))
