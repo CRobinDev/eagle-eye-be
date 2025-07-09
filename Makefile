@@ -91,5 +91,9 @@ logs:
 
 gorun:
 	go run cmd/app/main.go
+
+docker: 
+	docker build . -t $(ARGS)
+
 .PHONY: help migrate-up migrate-down migrate-redo migrate-status migrate-version migrate-force migrate-create seed-up seed-down run stop build logs
 
