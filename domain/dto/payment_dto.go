@@ -21,11 +21,11 @@ type UpdatePaymentStatusRequest struct {
 
 type PaymentRequest struct {
 	UserID        uuid.UUID `json:"user_id"`
-	TierOrder     string    `json:"tier_order" validate:"required"`
 	OrderID       string    `json:"order_id"`
-	Amount        int64     `json:"amount" validate:"required"`
+	TierOrder     string    `json:"tier_order" validate:"required,oneof=basic premium"`
 	CustomerName  string    `json:"customer_name,omitempty"`
 	CustomerEmail string    `json:"customer_email,omitempty"`
+	Amount        int64
 }
 
 type PaymentResponse struct {
