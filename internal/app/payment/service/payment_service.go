@@ -35,7 +35,12 @@ func (ps *paymentService) CreatePayment(ctx context.Context, req dto.PaymentRequ
 	traceID := utils.GetTraceID(ctx)
 	orderID := uuid.NewString()
 
+	tier := entities.ValueOfCustomerTier(req.TierOrder)
+	amount := float64(entities.TierPrice(tier))
+
 	req.OrderID = orderID
+	req.Amount = int64(amount)
+
 	snapResp, err := ps.midtrans.NewTransactionToken(req)
 	if err != nil {
 		ps.logger.WithFields(log.WithTraceID(traceID, err)).Error("[PaymentService][CreatePayment] failed to create snap midtrans payment")
@@ -45,7 +50,7 @@ func (ps *paymentService) CreatePayment(ctx context.Context, req dto.PaymentRequ
 	payment := entities.Payment{
 		OrderID: orderID,
 		UserID:  req.UserID,
-		Amount:  float64(req.Amount),
+		Amount:  int64(amount),
 		Tier:    req.TierOrder,
 	}
 
