@@ -127,3 +127,21 @@ func (cs *customerService) UpdateAPIKey(ctx context.Context, req dto.GenerateAPI
 		ExpiresAt: respCustomer.ExpiresAt,
 	}, nil
 }
+
+func (cs *customerService) GetCustomerAPIStatus(ctx context.Context, req dto.GetCustomerAPIStatusRequest) (dto.GetCustomerAPIStatusResponse, error) {
+	traceID := utils.GetTraceID(ctx)
+	customer, err := cs.cr.GetCustomerByID(ctx, req.CustomerID)
+	if err != nil {
+		cs.logger.WithFields(log.WithTraceID(traceID, err)).Error("[CustomerService][GetCustomerAPIStatus] user not found")
+		return dto.GetCustomerAPIStatusResponse{}, errorz.ErrUserNotFound.WithTraceID(traceID)
+	}
+	var cust entities.Customer
+	if customer == cust {
+		return dto.GetCustomerAPIStatusResponse{}, errorz.ErrCustomerNotRegistered.WithTraceID(traceID)
+	}
+
+	return dto.GetCustomerAPIStatusResponse{
+		IsCustomer: true,
+		ExpiresAt:  customer.ExpiresAt,
+	}, nil
+}
