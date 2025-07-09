@@ -211,7 +211,6 @@ func (ds *detectionService) createHttpRequest(traceID uuid.UUID, body *bytes.Buf
 	return detectResp, nil
 }
 
-
 func (ds *detectionService) GetDetectionData(ctx context.Context, req dto.GetDetectionRequest) (dto.GetDetectionResponse, error) {
 	traceID := utils.GetTraceID(ctx)
 	detection := dto.GetDetectionFilter{
@@ -232,17 +231,6 @@ func (ds *detectionService) GetDetectionData(ctx context.Context, req dto.GetDet
 	return mapper.ToDetectionResponse(detections, req.CurrentPage, req.Limit), nil
 }
 
-func (ds *detectionService) BlockDetection(ctx context.Context, req dto.DeleteDetectionRequest) error {
-	traceID := utils.GetTraceID(ctx)
-
-	if err := ds.dr.DeleteDetection(ctx, req.DetectionID); err != nil {
-		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DeleteDetection] failed to ban IP")
-		return errorz.ErrBanIP.WithTraceID(traceID)
-	}
-
-	return nil
-}
-
 func (ds *detectionService) GetDeepFakeDetected(ctx context.Context, req dto.GetDetectionRequest) (dto.GetDetectionResponse, error) {
 	traceID := utils.GetTraceID(ctx)
 	detection := dto.GetDetectionFilter{
@@ -261,6 +249,28 @@ func (ds *detectionService) GetDeepFakeDetected(ctx context.Context, req dto.Get
 	}
 
 	return mapper.ToDetectionResponse(detections, req.CurrentPage, req.Limit), nil
+}
+
+func (ds *detectionService) BlockDetection(ctx context.Context, req dto.DeleteDetectionRequest) error {
+	traceID := utils.GetTraceID(ctx)
+
+	if err := ds.dr.DeleteDetection(ctx, req.DetectionID); err != nil {
+		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DeleteDetection] failed to ban IP")
+		return errorz.ErrBanIP.WithTraceID(traceID)
+	}
+
+	return nil
+}
+
+func (ds *detectionService) UnblockDetection(ctx context.Context, req dto.UndeleteDetectionRequest) error {
+	traceID := utils.GetTraceID(ctx)
+
+	if err := ds.dr.UndeleteDetection(ctx, req.DetectionID); err != nil {
+		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DeleteDetection] failed to ban IP")
+		return errorz.ErrBanIP.WithTraceID(traceID)
+	}
+
+	return nil
 }
 
 // func (ds *detectionService) DetectDeepFake(ctx context.Context, req dto.DetectionRequest) (dto.DetectionResponse, error) {

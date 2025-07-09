@@ -185,3 +185,36 @@ func (dh *detectionHandler) BanIP(c *fiber.Ctx) error {
 
 	return response.NoContent(c)
 }
+
+func (dh *detectionHandler) UnbanIP(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(c.UserContext(), 5*time.Second)
+	defer cancel()
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return err
+	}
+
+	var req dto.DeleteDetectionRequest
+	req.DetectionID = uint16(id)
+
+	if c.Locals("role").(string) != "user" && !c.Locals("is_customer").(bool) {
+		return errorz.ErrForbiddenRole
+	}
+
+	if valErr := dh.val.Validate(req); valErr != nil {
+		return valErr
+	}
+
+	if err := dh.ds.BlockDetection(ctx, req); err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return errors.New("timeout")
+	default:
+	}
+
+	return response.NoContent(c)
+}

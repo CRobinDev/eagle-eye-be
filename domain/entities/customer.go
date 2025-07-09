@@ -47,6 +47,11 @@ var (
 		CustomerTierBasic:   2500,
 		CustomerTierPremium: 15000,
 	}
+
+	CustomerTierPrice = map[CustomerTier]uint64{
+		CustomerTierBasic:   3500000,
+		CustomerTierPremium: 15000000,
+	}
 )
 
 func (t CustomerTier) String() string {
@@ -75,4 +80,8 @@ func ValueOfCustomerTier(value string) CustomerTier {
 
 func TierLimit(t CustomerTier) uint32 {
 	return CustomerTierLimit[t]
+}
+
+func TierPrice(t CustomerTier) uint64 {
+	return CustomerTierPrice[t]
 }
