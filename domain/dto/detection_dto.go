@@ -32,6 +32,11 @@ type DeleteDetectionRequest struct {
 	UserID      uuid.UUID
 }
 
+type UndeleteDetectionRequest struct {
+	DetectionID uint16 `json:"id" validate:"required"`
+	UserID      uuid.UUID
+}
+
 type GetDetectionRequest struct {
 	UserID      uuid.UUID `json:"user_id"`
 	CurrentPage uint64    `json:"current_page" validate:"required"`

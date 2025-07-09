@@ -13,6 +13,7 @@ type IDetectionService interface {
 	GetDetectionData(ctx context.Context, req dto.GetDetectionRequest) (dto.GetDetectionResponse, error)
 	GetDeepFakeDetected(ctx context.Context, req dto.GetDetectionRequest) (dto.GetDetectionResponse, error)
 	BlockDetection(ctx context.Context, req dto.DeleteDetectionRequest) error
+	UnblockDetection(ctx context.Context, req dto.UndeleteDetectionRequest) error
 	// DetectDeepFakeGrpc(ctx context.Context, req proto.DetectionRequest) (dto.DetectionResponse, error)
 	// DetectDeepFakeVoice(ctx context.Context)
 }
@@ -22,4 +23,5 @@ type IDetectionRepository interface {
 	GetDetection(ctx context.Context, filter dto.GetDetectionFilter) ([]entities.Detection, error)
 	GetDeepFakeDetected(ctx context.Context, filter dto.GetDetectionFilter) ([]entities.Detection, error)
 	DeleteDetection(ctx context.Context, id uint16) error
+	UndeleteDetection(ctx context.Context, id uint16) error
 }

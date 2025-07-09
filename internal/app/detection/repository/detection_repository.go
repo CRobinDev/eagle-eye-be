@@ -98,6 +98,29 @@ func (dr *detectionRepository) DeleteDetection(ctx context.Context, id uint16) e
 	return nil
 }
 
+func (dr *detectionRepository) UndeleteDetection(ctx context.Context, id uint16) error {
+	query, values, err := squirrel.
+		Update("detections").
+		Set("deleted_at", nil).
+		Where(squirrel.Eq{
+			"id": id,
+		}).
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	query = dr.conn.Rebind(query)
+	_, err = dr.conn.ExecContext(ctx, query, values...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (dr *detectionRepository) GetDeepFakeDetected(ctx context.Context, filter dto.GetDetectionFilter) ([]entities.Detection, error) {
 	queryBuilder := squirrel.Select("id", "ip_address", "path", "method", "status_code", "email", "created_at").
 		From("detections").
