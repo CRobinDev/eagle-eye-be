@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/CRobinDev/karsa/config/env"
 	"github.com/CRobinDev/karsa/domain/dto"
@@ -61,6 +63,7 @@ func (ds *detectionService) DetectDeepFakeImage(ctx context.Context, req dto.Det
 		CustomerID: req.CustomerID,
 		Path:       req.Path,
 		Method:     req.Method,
+		Type:       "image",
 		StatusCode: uint16(200),
 	}
 
@@ -115,6 +118,7 @@ func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.Det
 		CustomerID: req.CustomerID,
 		Path:       req.Path,
 		Method:     req.Method,
+		Type:       "audio",
 		StatusCode: uint16(200),
 	}
 
@@ -228,7 +232,16 @@ func (ds *detectionService) GetDetectionData(ctx context.Context, req dto.GetDet
 		return dto.GetDetectionResponse{}, errorz.ErrSaveDetection.WithTraceID(traceID)
 	}
 
-	return mapper.ToDetectionResponse(detections, req.CurrentPage, req.Limit), nil
+	return mapper.ToDetectionPaginationResponse(detections, req.CurrentPage, req.Limit), nil
+}
+
+func (ds *detectionService) GetDetectionByID(ctx context.Context, req dto.GetDetectionDetailsRequest) (dto.DetectionDataResponse, error) {
+	detection, err := ds.dr.GetDetectionByID(ctx, req.DetectionID)
+	if err != nil {
+		return dto.DetectionDataResponse{}, err
+	}
+
+	return mapper.ToDetectionResponse(detection), nil
 }
 
 func (ds *detectionService) GetDeepFakeDetected(ctx context.Context, req dto.GetDetectionRequest) (dto.GetDetectionResponse, error) {
@@ -248,7 +261,7 @@ func (ds *detectionService) GetDeepFakeDetected(ctx context.Context, req dto.Get
 		return dto.GetDetectionResponse{}, errorz.ErrSaveDetection.WithTraceID(traceID)
 	}
 
-	return mapper.ToDetectionResponse(detections, req.CurrentPage, req.Limit), nil
+	return mapper.ToDetectionPaginationResponse(detections, req.CurrentPage, req.Limit), nil
 }
 
 func (ds *detectionService) BlockDetection(ctx context.Context, req dto.DeleteDetectionRequest) error {
@@ -273,94 +286,66 @@ func (ds *detectionService) UnblockDetection(ctx context.Context, req dto.Undele
 	return nil
 }
 
-// func (ds *detectionService) DetectDeepFake(ctx context.Context, req dto.DetectionRequest) (dto.DetectionResponse, error) {
-// 	traceID := utils.GetTraceID(ctx)
-// 	file, err := req.File.Open()
-// 	if err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to open image")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToOpenFile.WithTraceID(traceID)
-// 	}
-// 	defer file.Close()
+func (ds *detectionService) GetCustomerUsage(ctx context.Context, req dto.GetCustomerUsageRequest) (dto.CustomerUsageResponse, error) {
+	switch req.Mode {
+	case "hourly":
+		date, err := time.Parse("2006-01-02", req.Date)
+		if err != nil {
+			return dto.CustomerUsageResponse{}, errors.New("invalid date format, use YYYY-MM-DD")
+		}
+		resp, err := ds.dr.GetHourlyUsage(ctx, req.CustomerID, date)
+		if err != nil {
+			return dto.CustomerUsageResponse{}, err
+		}
+		return dto.CustomerUsageResponse{
+			Mode:    req.Mode,
+			Details: resp,
+		}, nil
 
-// 	fileBytes, err := io.ReadAll(file)
-// 	if err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to read image")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToReadFile.WithTraceID(traceID)
-// 	}
+	case "daily":
+		if req.Days <= 0 {
+			req.Days = 7
+		}
 
-// 	body := &bytes.Buffer{}
-// 	writer := multipart.NewWriter(body)
+		resp, err := ds.dr.GetDailyUsage(ctx, req.CustomerID, req.Days)
+		if err != nil {
+			return dto.CustomerUsageResponse{}, errors.New("failed to get daily usage")
+		}
 
-// 	part, err := writer.CreateFormFile("file", req.File.Filename)
-// 	if err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to create form file")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToCreateFormFile.WithTraceID(traceID)
-// 	}
+		return dto.CustomerUsageResponse{
+			Mode:    req.Mode,
+			Details: resp,
+		}, nil
 
-// 	_, err = part.Write(fileBytes)
-// 	if err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] to write bytes")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToWriteBytes.WithTraceID(traceID)
-// 	}
+	case "weekly":
+		if req.Weeks <= 0 {
+			req.Weeks = 4
+		}
+		resp, err := ds.dr.GetWeeklyUsage(ctx, req.CustomerID, req.Weeks)
+		if err != nil {
+			return dto.CustomerUsageResponse{}, errors.New("failed to get weekly usage")
+		}
 
-// 	if err := writer.Close(); err != nil {
-// 		return dto.DetectionResponse{}, fmt.Errorf("failed to close writer : %v", err)
-// 	}
+		return dto.CustomerUsageResponse{
+			Mode:    req.Mode,
+			Details: resp,
+		}, nil
 
-// 	request, err := http.NewRequest(http.MethodPost, env.GetEnv().DetectionUrl, body)
-// 	if err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to create http request")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToCreateHTTPRequest.WithTraceID(traceID)
-// 	}
-// 	request.Header.Set("Content-Type", writer.FormDataContentType())
+	case "monthly":
+		if req.Months <= 0 {
+			req.Months = 6
+		}
+		resp, err := ds.dr.GetMonthlyUsage(ctx, req.CustomerID, req.Months)
+		if err != nil {
+			return dto.CustomerUsageResponse{}, errors.New("failed to get monthly usage")
+		}
 
-// 	client := &http.Client{}
-// 	resp, err := client.Do(request)
-// 	if err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to make http client")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToInitiateHTTPClient.WithTraceID(traceID)
-// 	}
-// 	defer resp.Body.Close()
-// 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to analyze image")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToAnalyzeImage.WithTraceID(traceID)
-// 	}
+		return dto.CustomerUsageResponse{
+			Mode:    req.Mode,
+			Details: resp,
+		}, nil
 
-// 	bodyResp, err := io.ReadAll(resp.Body)
-// 	if err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to read response body")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToReadFile.WithTraceID(traceID)
-// 	}
-
-// 	var detectResp dto.DetectionResponse
-// 	if err := json.Unmarshal(bodyResp, &detectResp); err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to unmarshal json to struct")
-// 		return dto.DetectionResponse{}, errorz.ErrUnmarshal.WithTraceID(traceID)
-// 	}
-
-// 	if detectResp.Prediction == "" {
-// 		return dto.DetectionResponse{}, fmt.Errorf("detectResp struct empty. Failed to unmarshal : %v", fiber.StatusInternalServerError)
-// 	}
-
-// 	detection := entities.Detection{
-// 		IPAddress:  req.IP,
-// 		Email:      req.Email,
-// 		CustomerID: req.CustomerID,
-// 		Path:       req.Path,
-// 		Method:     req.Method,
-// 		StatusCode: uint16(200),
-// 	}
-
-// 	if detectResp.Prediction == "Real" {
-// 		detection.IsDeepFake = false
-// 	} else {
-// 		detection.IsDeepFake = true
-// 	}
-
-// 	if err := ds.dr.CreateDetection(ctx, &detection); err != nil {
-// 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to create detection history")
-// 		return dto.DetectionResponse{}, errorz.ErrFailedToCreateDetection.WithTraceID(traceID)
-// 	}
-
-// 	return detectResp, nil
-// }
+	default:
+		return dto.CustomerUsageResponse{}, errors.New("invalid mode")
+	}
+}

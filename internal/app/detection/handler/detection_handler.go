@@ -83,6 +83,43 @@ func (dh *detectionHandler) GetDetection(c *fiber.Ctx) error {
 	return response.Success(c, "detections", resp)
 }
 
+func (dh *detectionHandler) GetDetectionByID(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(c.UserContext(), 5*time.Second)
+	defer cancel()
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return err
+	}
+
+	var req dto.GetDetectionDetailsRequest
+	req.DetectionID = uint16(id)
+
+	if valErr := dh.val.Validate(req); valErr != nil {
+		return valErr
+	}
+
+	if c.Locals("role").(string) == "user" && c.Locals("is_customer").(bool) {
+		userID, err := jwt.GetUser(c)
+		if err != nil {
+			return err
+		}
+		req.UserID = userID
+	}
+
+	resp, err := dh.ds.GetDetectionByID(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return errors.New("timeout")
+	default:
+	}
+
+	return response.Success(c, "detections", resp)
+}
+
 func (dh *detectionHandler) DetectDeepFakeAudio(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.UserContext(), 10*time.Second)
 	defer cancel()
@@ -195,7 +232,7 @@ func (dh *detectionHandler) UnbanIP(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req dto.DeleteDetectionRequest
+	var req dto.UndeleteDetectionRequest
 	req.DetectionID = uint16(id)
 
 	if c.Locals("role").(string) != "user" && !c.Locals("is_customer").(bool) {
@@ -206,7 +243,7 @@ func (dh *detectionHandler) UnbanIP(c *fiber.Ctx) error {
 		return valErr
 	}
 
-	if err := dh.ds.BlockDetection(ctx, req); err != nil {
+	if err := dh.ds.UnblockDetection(ctx, req); err != nil {
 		return err
 	}
 
@@ -217,4 +254,53 @@ func (dh *detectionHandler) UnbanIP(c *fiber.Ctx) error {
 	}
 
 	return response.NoContent(c)
+}
+
+func (dh *detectionHandler) CustomerUsage(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(c.UserContext(), 5*time.Second)
+	defer cancel()
+
+	var req dto.GetCustomerUsageRequest
+
+	req.Mode = c.Query("mode")
+
+	switch req.Mode {
+	case "hourly":
+		date := c.Query("date")
+		req.Date = date
+	case "daily":
+		days := c.QueryInt("days")
+		req.Days = days
+	case "weekly":
+		weeks := c.QueryInt("weeks")
+		req.Weeks = weeks
+	case "monthly":
+		months := c.QueryInt("months")
+		req.Months = months
+	default:
+		return errors.New("invalid parameter")
+	}
+
+	customerID, err := jwt.GetUser(c)
+	if err != nil {
+		return err
+	}
+	req.CustomerID = customerID
+
+	if valErr := dh.val.Validate(req); valErr != nil {
+		return valErr
+	}
+
+	resp, err := dh.ds.GetCustomerUsage(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return errors.New("timeout")
+	default:
+	}
+
+	return response.Success(c, "detections", resp)
 }
