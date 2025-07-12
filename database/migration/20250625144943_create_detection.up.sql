@@ -6,6 +6,7 @@ CREATE TABLE detections (
     path VARCHAR(128) NOT NULL DEFAULT '',
     method VARCHAR(16) NOT NULL DEFAULT '',
     status_code SMALLINT NOT NULL,
+    type VARCHAR(32) NOT NULL default 'unknown',
     is_deepfake BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
