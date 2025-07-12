@@ -17,11 +17,16 @@ type GenerateAPIKeyResponse struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-type GetCustomerAPIStatusRequest struct {
+type GetCustomerRequest struct {
 	CustomerID uuid.UUID `json:"customer_id"`
 }
 
 type GetCustomerAPIStatusResponse struct {
 	IsCustomer bool      `json:"is_customer"`
+	ExpiresAt  time.Time `json:"expires_at"`
+}
+
+type GetCustomerTotalCallsResponse struct {
+	TotalCalls uint64    `json:"total_calls"`
 	ExpiresAt  time.Time `json:"expires_at"`
 }

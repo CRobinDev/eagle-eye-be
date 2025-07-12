@@ -128,7 +128,7 @@ func (cs *customerService) UpdateAPIKey(ctx context.Context, req dto.GenerateAPI
 	}, nil
 }
 
-func (cs *customerService) GetCustomerAPIStatus(ctx context.Context, req dto.GetCustomerAPIStatusRequest) (dto.GetCustomerAPIStatusResponse, error) {
+func (cs *customerService) GetCustomerAPIStatus(ctx context.Context, req dto.GetCustomerRequest) (dto.GetCustomerAPIStatusResponse, error) {
 	traceID := utils.GetTraceID(ctx)
 	customer, err := cs.cr.GetCustomerByID(ctx, req.CustomerID)
 	if err != nil {
@@ -142,6 +142,24 @@ func (cs *customerService) GetCustomerAPIStatus(ctx context.Context, req dto.Get
 
 	return dto.GetCustomerAPIStatusResponse{
 		IsCustomer: true,
+		ExpiresAt:  customer.ExpiresAt,
+	}, nil
+}
+
+func (cs *customerService) GetCustomerTotalCalls(ctx context.Context, req dto.GetCustomerRequest) (dto.GetCustomerTotalCallsResponse, error) {
+	traceID := utils.GetTraceID(ctx)
+	customer, err := cs.cr.GetCustomerByID(ctx, req.CustomerID)
+	if err != nil {
+		cs.logger.WithFields(log.WithTraceID(traceID, err)).Error("[CustomerService][GetCustomerAPIStatus] user not found")
+		return dto.GetCustomerTotalCallsResponse{}, errorz.ErrUserNotFound.WithTraceID(traceID)
+	}
+	var cust entities.Customer
+	if customer == cust {
+		return dto.GetCustomerTotalCallsResponse{}, errorz.ErrCustomerNotRegistered.WithTraceID(traceID)
+	}
+
+	return dto.GetCustomerTotalCallsResponse{
+		TotalCalls: customer.CurrentUsage,
 		ExpiresAt:  customer.ExpiresAt,
 	}, nil
 }
