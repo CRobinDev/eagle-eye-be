@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/CRobinDev/karsa/config/env"
@@ -90,7 +89,7 @@ func (g *gemini) processAnalyzation(ctx context.Context, req dto.GeminiAnalyzeRe
 	}
 
 	part := result.Candidates[0].Content.Parts[0]
-	
+
 	rawJSON := []byte(part.Text)
 
 	cleanedJSON := cleanJSON(string(rawJSON))
@@ -100,7 +99,6 @@ func (g *gemini) processAnalyzation(ctx context.Context, req dto.GeminiAnalyzeRe
 	if err = json.Unmarshal([]byte(cleanedJSON), &resp); err != nil {
 		return dto.GeminiAnalyzeResponse{}, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-	log.Println(cleanedJSON)
 
 	return resp, nil
 }
