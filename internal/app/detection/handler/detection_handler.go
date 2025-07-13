@@ -21,11 +21,9 @@ func (dh *detectionHandler) DetectDeepFakeImage(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	email := c.FormValue("email")
 
 	var req dto.DetectionRequest
 	req.File = file
-	req.Email = email
 	req.IP = c.IP()
 	req.Path = c.Path()
 	req.Method = c.Method()
@@ -128,11 +126,9 @@ func (dh *detectionHandler) DetectDeepFakeAudio(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	email := c.FormValue("email") // abu: BINGUNG
 
 	var req dto.DetectionRequest
 	req.File = file
-	req.Email = email
 	req.IP = c.IP()
 	req.Path = c.Path()
 	req.Method = c.Method()

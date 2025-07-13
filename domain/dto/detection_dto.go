@@ -9,7 +9,6 @@ import (
 
 type DetectionRequest struct {
 	File       *multipart.FileHeader `form:"file" validate:"required"`
-	Email      string                `form:"email" validate:"required"`
 	IP         string
 	Path       string
 	Method     string
@@ -18,7 +17,8 @@ type DetectionRequest struct {
 
 type DetectionResponse struct {
 	Filename   string `json:"filename"`
-	Prediction string `json:"prediction" validate:"oneof=Real Fake"`
+	Prediction string `json:"prediction"`
+	Confidence float32 `json:"confidence"`
 }
 
 type GetDetectionFilter struct {

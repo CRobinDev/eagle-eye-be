@@ -25,8 +25,8 @@ func NewDetectionRepository(conn *sqlx.DB) interfaces.IDetectionRepository {
 func (dr *detectionRepository) CreateDetection(ctx context.Context, detection *entities.Detection) error {
 	query, values, err := squirrel.
 		Insert("detections").
-		Columns("ip_address", "email", "customer_id", "path", "method", "status_code").
-		Values(detection.IPAddress, detection.Email, detection.CustomerID, detection.Path, detection.Method, detection.StatusCode).
+		Columns("ip_address", "customer_id", "path", "method", "status_code", "type", "confidence").
+		Values(detection.IPAddress, detection.CustomerID, detection.Path, detection.Method, detection.StatusCode, detection.Type, detection.Confidence).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
@@ -44,7 +44,7 @@ func (dr *detectionRepository) CreateDetection(ctx context.Context, detection *e
 
 }
 func (dr *detectionRepository) GetDetection(ctx context.Context, filter dto.GetDetectionFilter) ([]entities.Detection, error) {
-	queryBuilder := squirrel.Select("id", "ip_address", "path", "status_code", "type", "method", "email", "is_deepfake", "created_at").
+	queryBuilder := squirrel.Select("id", "ip_address", "path", "status_code", "type", "method", "is_deepfake", "created_at").
 		From("detections").
 		Where(squirrel.Expr("deleted_at IS NULL"))
 
@@ -146,7 +146,7 @@ func (dr *detectionRepository) UndeleteDetection(ctx context.Context, id uint16)
 }
 
 func (dr *detectionRepository) GetDeepFakeDetected(ctx context.Context, filter dto.GetDetectionFilter) ([]entities.Detection, error) {
-	queryBuilder := squirrel.Select("id", "type", "ip_address", "path", "method", "status_code", "email", "is_deepfake", "created_at").
+	queryBuilder := squirrel.Select("id", "type", "ip_address", "path", "method", "status_code", "is_deepfake", "created_at").
 		From("detections").
 		Where(squirrel.Eq{"is_deepfake": true}).
 		Where(squirrel.Expr("deleted_at IS NULL"))

@@ -29,8 +29,7 @@ import (
 type detectionService struct {
 	dr     interfaces.IDetectionRepository
 	gemini gemini.IGemini
-	// dsGrpc proto.ModelServiceClient
-	logger *logrus.Logger
+		logger *logrus.Logger
 }
 
 func NewDetectionService(dr interfaces.IDetectionRepository, gemini gemini.IGemini, logger *logrus.Logger) interfaces.IDetectionService {
@@ -48,7 +47,7 @@ func (ds *detectionService) DetectDeepFakeImage(ctx context.Context, req dto.Det
 		return dto.DetectionResponse{}, err
 	}
 
-	resp, err := ds.createHttpRequest(traceID, body, writer)
+	resp, err := ds.createHttpRequest(traceID, body, writer, "image")
 	if err != nil {
 		return dto.DetectionResponse{}, err
 	}
@@ -59,7 +58,6 @@ func (ds *detectionService) DetectDeepFakeImage(ctx context.Context, req dto.Det
 
 	detection := entities.Detection{
 		IPAddress:  req.IP,
-		Email:      req.Email,
 		CustomerID: req.CustomerID,
 		Path:       req.Path,
 		Method:     req.Method,
@@ -77,35 +75,37 @@ func (ds *detectionService) DetectDeepFakeImage(ctx context.Context, req dto.Det
 		return dto.DetectionResponse{}, err
 	}
 
-	if geminiResp.Predict != "fake" || strings.ToLower(resp.Prediction) != "fake" {
-		detection.IsDeepFake = false
-	} else {
-		detection.IsDeepFake = true
-	}
+	isDeepFake, prediction, confidence := ds.compareResult(geminiResp, resp)
+
+	detection.IsDeepFake = isDeepFake
 
 	if err := ds.dr.CreateDetection(ctx, &detection); err != nil {
 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to create detection history")
 		return dto.DetectionResponse{}, errorz.ErrFailedToCreateDetection.WithTraceID(traceID)
 	}
 
-	return resp, nil
+	return dto.DetectionResponse{
+		Filename:   resp.Filename,
+		Prediction: prediction,
+		Confidence: confidence,
+	}, nil
 }
 
 func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.DetectionRequest) (dto.DetectionResponse, error) {
 	traceID := utils.GetTraceID(ctx)
-	_, _, fileBytes, err := ds.createFormFile(traceID, req.File)
+	body, writer, fileBytes, err := ds.createFormFile(traceID, req.File)
 	if err != nil {
 		return dto.DetectionResponse{}, err
 	}
 
-	// resp, err := ds.createHttpRequest(traceID, body, writer)
-	// if err != nil {
-	// 	return dto.DetectionResponse{}, err
-	// }
+	resp, err := ds.createHttpRequest(traceID, body, writer, "audio")
+	if err != nil {
+		return dto.DetectionResponse{}, err
+	}
 
-	// if resp.Prediction == "" {
-	// 	return dto.DetectionResponse{}, fmt.Errorf("detectResp struct empty. Failed to unmarshal : %v", fiber.StatusInternalServerError)
-	// }
+	if resp.Prediction == "" {
+		return dto.DetectionResponse{}, fmt.Errorf("detectResp struct empty. Failed to unmarshal : %v", fiber.StatusInternalServerError)
+	}
 
 	geminiReq := dto.GeminiAnalyzeRequest{
 		File:        fileBytes,
@@ -114,7 +114,6 @@ func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.Det
 
 	detection := entities.Detection{
 		IPAddress:  req.IP,
-		Email:      req.Email,
 		CustomerID: req.CustomerID,
 		Path:       req.Path,
 		Method:     req.Method,
@@ -122,16 +121,14 @@ func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.Det
 		StatusCode: uint16(200),
 	}
 
-	resp, err := ds.gemini.DetectDeepFakeAudio(ctx, geminiReq)
+	geminiResp, err := ds.gemini.DetectDeepFakeAudio(ctx, geminiReq)
 	if err != nil {
 		return dto.DetectionResponse{}, err
 	}
 
-	if resp.Predict == "real" {
-		detection.IsDeepFake = false
-	} else {
-		detection.IsDeepFake = true
-	}
+	isDeepFake, prediction, confidence := ds.compareResult(geminiResp, resp)
+
+	detection.IsDeepFake = isDeepFake
 
 	if err := ds.dr.CreateDetection(ctx, &detection); err != nil {
 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to create detection history")
@@ -139,9 +136,31 @@ func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.Det
 	}
 
 	return dto.DetectionResponse{
-		Filename:   req.File.Filename,
-		Prediction: resp.Predict,
+		Filename:   resp.Filename,
+		Prediction: prediction,
+		Confidence: confidence,
 	}, nil
+}
+
+func (ds *detectionService) compareResult(geminiPredict dto.GeminiAnalyzeResponse, modelPredict dto.DetectionResponse) (bool, string, float32) {
+	var isDeepFake bool
+	var prediction string
+	if geminiPredict.Predict != "fake" || strings.ToLower(modelPredict.Prediction) != "fake" {
+		isDeepFake = false
+		prediction = "real"
+	} else {
+		isDeepFake = true
+		prediction = "fake"
+	}
+
+	var confidence float32
+	if geminiPredict.Confidence >= modelPredict.Confidence {
+		confidence = geminiPredict.Confidence
+	} else {
+		confidence = modelPredict.Confidence
+	}
+
+	return isDeepFake, prediction, confidence
 }
 
 func (ds *detectionService) createFormFile(traceID uuid.UUID, image *multipart.FileHeader) (*bytes.Buffer, *multipart.Writer, []byte, error) {
@@ -180,8 +199,15 @@ func (ds *detectionService) createFormFile(traceID uuid.UUID, image *multipart.F
 	return body, writer, fileBytes, nil
 }
 
-func (ds *detectionService) createHttpRequest(traceID uuid.UUID, body *bytes.Buffer, writer *multipart.Writer) (dto.DetectionResponse, error) {
-	request, err := http.NewRequest(http.MethodPost, env.GetEnv().DetectionUrl, body)
+func (ds *detectionService) createHttpRequest(traceID uuid.UUID, body *bytes.Buffer, writer *multipart.Writer, types string) (dto.DetectionResponse, error) {
+	var url string
+	if types == "audio" {
+		url = env.GetEnv().AudioModelUrl
+	} else {
+		url = env.GetEnv().ImageModelUrl
+	}
+
+	request, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to create http request")
 		return dto.DetectionResponse{}, errorz.ErrFailedToCreateHTTPRequest.WithTraceID(traceID)
