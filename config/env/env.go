@@ -39,10 +39,11 @@ type Env struct {
 	GeminiApiModel     string `mapstructure:"GEMINI_API_MODEL"`
 	MidtransServerKey  string `mapstructure:"MIDTRANS_SERVER_KEY"`
 	BcryptCost         int    `mapstructure:"BCRYPT_COST"`
-	DetectionUrl       string `mapstructure:"DETECTION_URL"`
+	ImageModelUrl      string `mapstructure:"IMAGE_MODEL_URL"`
+	AudioModelUrl      string `mapstructure:"AUDIO_MODEL_URL"`
 	GRPCPort           string `mapstructure:"GRPC_PORT"`
 	GRPCHost           string `mapstructure:"GRPC_HOST"`
-	HttpHeader         string `mapstructure:"HTTP_HEADER"` 
+	HttpHeader         string `mapstructure:"HTTP_HEADER"`
 }
 
 func NewEnv() *Env {
