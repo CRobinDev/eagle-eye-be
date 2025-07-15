@@ -24,7 +24,6 @@ func InitJWT() {
 type Claims struct {
 	Role        string    `json:"role"`
 	UserID      uuid.UUID `json:"user_id"`
-	IsCustomer  bool      `json:"is_customer"`
 	DisplayName string    `json:"username"`
 	jwt.RegisteredClaims
 }
@@ -34,7 +33,6 @@ func CreateToken(user *entities.User) (string, error) {
 		Role:        string(user.Role),
 		UserID:      user.ID,
 		DisplayName: user.Username,
-		IsCustomer:  user.IsCustomer,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiredTime)),
 		},
