@@ -10,7 +10,6 @@ import (
 	"github.com/CRobinDev/karsa/pkg/errorz"
 	"github.com/CRobinDev/karsa/pkg/log"
 	"github.com/CRobinDev/karsa/pkg/utils"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -51,7 +50,7 @@ func (cs *customerService) GenerateAPIKey(ctx context.Context, req dto.GenerateA
 		cs.logger.Warnf("Invalid customer tier : %v", req.CustomerTier)
 		return dto.GenerateAPIKeyResponse{}, errorz.ErrInvalidCustomerTier
 	}
-
+	log.NewLogger().Println(tier)
 	customer := entities.Customer{
 		ID:           req.UserID,
 		CustomerTier: tier,
@@ -60,21 +59,22 @@ func (cs *customerService) GenerateAPIKey(ctx context.Context, req dto.GenerateA
 		MonthlyLimit: entities.TierLimit(tier),
 		ExpiresAt:    expiresAt,
 	}
-
-	var order dto.PaymentResponse
+	
+	customer.OrderID = "free"
 	if tier != entities.CustomerTierFree {
-		order, err = cs.ps.LatestPaymentStatus(ctx, dto.GetPaymentStatusRequest{UserID: req.UserID})
-		if err != nil {
-			cs.logger.WithFields(log.WithTraceID(traceID, err)).Error("[CustomerService][GenerateAPIKey] failed to fetch latest payment")
-			return dto.GenerateAPIKeyResponse{}, errorz.ErrFailedToGetLatestPaymentStatus.WithTraceID(traceID)
-		}
+		var order dto.PaymentResponse
+		if tier != entities.CustomerTierFree {
+			order, err = cs.ps.LatestPaymentStatus(ctx, dto.GetPaymentStatusRequest{UserID: req.UserID})
+			if err != nil {
+				cs.logger.WithFields(log.WithTraceID(traceID, err)).Error("[CustomerService][GenerateAPIKey] failed to fetch latest payment")
+				return dto.GenerateAPIKeyResponse{}, errorz.ErrFailedToGetLatestPaymentStatus.WithTraceID(traceID)
+			}
 
-		if order.Status != "success" {
-			return dto.GenerateAPIKeyResponse{}, fmt.Errorf("payment still %v, try again later until success", order.Status)
+			if order.Status != "success" {
+				return dto.GenerateAPIKeyResponse{}, fmt.Errorf("payment still %v, try again later until success", order.Status)
+			}
+			customer.OrderID = order.OrderID
 		}
-		customer.OrderID = order.OrderID
-	} else {
-		customer.OrderID = uuid.Nil.String()
 	}
 
 	if err := cs.cr.CreateCustomer(ctx, &customer); err != nil {
@@ -87,7 +87,7 @@ func (cs *customerService) GenerateAPIKey(ctx context.Context, req dto.GenerateA
 		user.ID = req.UserID
 		user.IsCustomer = true
 
-		if err := cs.ur.UpdateUser(ctx, &user); err != nil {
+		if err := cs.ur.UpdateUser(context.Background(), &user); err != nil {
 			cs.logger.Errorf("[CustomerService][GenerateAPIKey] failed to update user status : %v", err)
 		}
 	}()

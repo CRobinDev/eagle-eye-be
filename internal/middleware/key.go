@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"os"
 	"strings"
 
 	"github.com/CRobinDev/karsa/config/env"
@@ -39,15 +38,20 @@ func ValidateKey(cr interfaces.ICustomerRepository) fiber.Handler {
 			return errorz.ErrFailedToUpdateUsage
 		}
 
+		if customer.CurrentUsage >= uint64(customer.MonthlyLimit) {
+			return errorz.ErrMonthlyLimitReached
+		}
+
 		if customer.ApiKey != hashedApiKey || customer.Prefix != prefix {
 			return errorz.ErrMismatchAPIKey
 		}
 
 		var cust entities.Customer
-		if  cust == customer{
+		if cust == customer {
 			logrus.Error("customer is empty.")
-			os.Exit(1)
+			return errorz.ErrUserNotFound
 		}
+
 		c.Locals("customer_id", customer.ID)
 		return c.Next()
 	}

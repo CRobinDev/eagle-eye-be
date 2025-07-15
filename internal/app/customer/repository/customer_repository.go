@@ -130,7 +130,6 @@ func (cr *customerRepository) UpdateUsage(ctx context.Context, prefix string) (e
 					"revoked_at": nil,
 				},
 				squirrel.Expr("expires_at > NOW()"),
-				squirrel.Expr("current_usage < monthly_limit"),
 			},
 		).
 		Suffix("RETURNING id, customer_tier, hashed_key, prefix, current_usage, monthly_limit, last_used").
