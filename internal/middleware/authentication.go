@@ -30,7 +30,6 @@ func Authenticate() fiber.Handler {
 			return errorz.ErrFailedToDecodeJWT
 		}
 
-		c.Locals("is_customer", claims.IsCustomer)
 		c.Locals("userID", claims.UserID)
 		c.Locals("role", claims.Role)
 
