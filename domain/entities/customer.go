@@ -29,10 +29,10 @@ type Customer struct {
 type CustomerTier uint8
 
 const (
-	CustomerTierUnknown CustomerTier = 0
-	CustomerTierFree    CustomerTier = 1
-	CustomerTierBasic   CustomerTier = 2
-	CustomerTierPremium CustomerTier = 3
+	CustomerTierFree    CustomerTier = 0
+	CustomerTierBasic   CustomerTier = 1
+	CustomerTierPremium CustomerTier = 2
+	CustomerTierUnknown CustomerTier = 3
 )
 
 var (
