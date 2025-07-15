@@ -79,17 +79,17 @@ var (
 	ErrFailedToGetLatestPaymentStatus = NewError(fiber.StatusInternalServerError, "Failed to get the latest payment status. Please try again later.")
 
 	// Customer Errors
-	ErrFailedToGenerateKey  = NewError(fiber.StatusInternalServerError, "Something went wrong when generating api key. Please try again later.")
-	ErrInvalidCustomerTier  = NewError(fiber.StatusBadRequest, "Invalid customer tier. Please choose one of the list !")
-	ErrPaymentUnsuccess     = NewError(fiber.StatusPaymentRequired, "Payment still pending. Try again later")
-	ErrFailedToSaveCustomer = NewError(fiber.StatusInternalServerError, "Failed to save customer information. Please try again later.")
-	ErrFailedToUpdateAPIKey = NewError(fiber.StatusInternalServerError, "Failed to update api key. Please try again later.")
+	ErrFailedToGenerateKey   = NewError(fiber.StatusInternalServerError, "Something went wrong when generating api key. Please try again later.")
+	ErrInvalidCustomerTier   = NewError(fiber.StatusBadRequest, "Invalid customer tier. Please choose one of the list !")
+	ErrPaymentUnsuccess      = NewError(fiber.StatusPaymentRequired, "Payment still pending. Try again later")
+	ErrFailedToSaveCustomer  = NewError(fiber.StatusInternalServerError, "Failed to save customer information. Please try again later.")
+	ErrFailedToUpdateAPIKey  = NewError(fiber.StatusInternalServerError, "Failed to update api key. Please try again later.")
 	ErrCustomerNotRegistered = NewError(fiber.StatusNotFound, "There is no customer for your account. Please try to subcribe first !")
 
 	// Detection Errors
 	ErrMissingAPIKey              = NewError(fiber.StatusUnauthorized, "Key Empty. Please try again later!")
 	ErrInvalidAPIKey              = NewError(fiber.StatusUnauthorized, "Invalid Key. Don't try to brute force!")
-	ErrMismatchAPIKey              = NewError(fiber.StatusUnauthorized, "Mismatch Key. Please input the correct one !")
+	ErrMismatchAPIKey             = NewError(fiber.StatusUnauthorized, "Mismatch Key. Please input the correct one !")
 	ErrFailedToCreateFormFile     = NewError(fiber.StatusInternalServerError, "Failed to create form file. Please try again later.")
 	ErrFailedToWriteBytes         = NewError(fiber.StatusInternalServerError, "Failed to write file bytes. Please try again later.")
 	ErrFailedToCreateHTTPRequest  = NewError(fiber.StatusInternalServerError, "Failed to create HTTP request. Please try again later.")
@@ -98,6 +98,7 @@ var (
 	ErrSaveDetection              = NewError(fiber.StatusInternalServerError, "Failed to save detection history. Please try again later.")
 	ErrBanIP                      = NewError(fiber.StatusInternalServerError, "Failed to ban ip. Please try again later.")
 	ErrFailedToUpdateUsage        = NewError(fiber.StatusInternalServerError, "Failed to update customer usage. Please try again later.")
+	ErrMonthlyLimitReached        = NewError(fiber.StatusPaymentRequired, "Monthly limit reached. Please subscribe to a higher tier.")
 
 	// Other Errors
 	ErrFailedGenerateUUIDV7 = NewError(fiber.StatusInternalServerError, "Failed to generate UUIDV7 for User ID. Please try again later !")
