@@ -26,7 +26,7 @@ func NewFiber(logger *logrus.Logger) *fiber.App {
 		JSONEncoder:      json.Marshal,
 		JSONDecoder:      json.Unmarshal,
 		ErrorHandler:     newErrorHandler(),
-		BodyLimit:        10 * 1024 * 1024,
+		BodyLimit:        12 * 1024 * 1024,
 		DisableKeepalive: true,
 		StrictRouting:    true,
 		CaseSensitive:    true,
