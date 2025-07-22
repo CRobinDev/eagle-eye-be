@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/CRobinDev/karsa/domain/dto"
@@ -14,7 +15,7 @@ import (
 )
 
 func (dh *detectionHandler) DetectDeepFakeImage(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(c.UserContext(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.UserContext(), 20*time.Second)
 	defer cancel()
 
 	file, err := c.FormFile("file")
@@ -59,7 +60,7 @@ func (dh *detectionHandler) GetDetection(c *fiber.Ctx) error {
 		return valErr
 	}
 
-	if c.Locals("role").(string) == "user" && c.Locals("is_customer").(bool) {
+	if c.Locals("role").(string) == "user" {
 		userID, err := jwt.GetUser(c)
 		if err != nil {
 			return err
@@ -96,7 +97,7 @@ func (dh *detectionHandler) GetDetectionByID(c *fiber.Ctx) error {
 		return valErr
 	}
 
-	if c.Locals("role").(string) == "user" && c.Locals("is_customer").(bool) {
+	if c.Locals("role").(string) == "user" {
 		userID, err := jwt.GetUser(c)
 		if err != nil {
 			return err
@@ -119,7 +120,7 @@ func (dh *detectionHandler) GetDetectionByID(c *fiber.Ctx) error {
 }
 
 func (dh *detectionHandler) DetectDeepFakeAudio(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(c.UserContext(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.UserContext(), 60*time.Second)
 	defer cancel()
 
 	file, err := c.FormFile("file")
@@ -133,7 +134,6 @@ func (dh *detectionHandler) DetectDeepFakeAudio(c *fiber.Ctx) error {
 	req.Path = c.Path()
 	req.Method = c.Method()
 	req.CustomerID = c.Locals("customer_id").(uuid.UUID)
-
 	resp, err := dh.ds.DetectDeepFakeAudio(ctx, req)
 	if err != nil {
 		return err
@@ -164,7 +164,7 @@ func (dh *detectionHandler) GetDetectedDeepFake(c *fiber.Ctx) error {
 		return valErr
 	}
 
-	if c.Locals("role").(string) == "user" && c.Locals("is_customer").(bool) {
+	if c.Locals("role").(string) == "user" {
 		userID, err := jwt.GetUser(c)
 		if err != nil {
 			return err
@@ -190,15 +190,12 @@ func (dh *detectionHandler) BanIP(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.UserContext(), 5*time.Second)
 	defer cancel()
 
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return err
-	}
+	ip := c.Params("ip")
 
 	var req dto.DeleteDetectionRequest
-	req.DetectionID = uint16(id)
+	req.IP = net.ParseIP(ip) 
 
-	if c.Locals("role").(string) != "user" && !c.Locals("is_customer").(bool) {
+	if c.Locals("role").(string) != "user" {
 		return errorz.ErrForbiddenRole
 	}
 
@@ -223,15 +220,12 @@ func (dh *detectionHandler) UnbanIP(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.UserContext(), 5*time.Second)
 	defer cancel()
 
-	id, err := c.ParamsInt("id")
-	if err != nil {
+	var req dto.UndeleteDetectionRequest
+	if err := c.BodyParser(&req); err != nil {
 		return err
 	}
 
-	var req dto.UndeleteDetectionRequest
-	req.DetectionID = uint16(id)
-
-	if c.Locals("role").(string) != "user" && !c.Locals("is_customer").(bool) {
+	if c.Locals("role").(string) != "user" {
 		return errorz.ErrForbiddenRole
 	}
 

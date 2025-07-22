@@ -2,6 +2,9 @@ package mapper
 
 import (
 	"fmt"
+	"math"
+	"time"
+	_ "time/tzdata"
 
 	"github.com/CRobinDev/karsa/domain/dto"
 	"github.com/CRobinDev/karsa/domain/entities"
@@ -28,6 +31,7 @@ func ToDetectionResponse(detection entities.Detection) dto.DetectionDataResponse
 		Method:    detection.Method,
 		Status:    DetectionStatusMapper[detection.IsDeepFake],
 		CreatedAt: detection.CreatedAt,
+		IsBanned:  detection.IsBanned,
 	}
 
 	if detection.IsDeepFake {
@@ -39,6 +43,12 @@ func ToDetectionResponse(detection entities.Detection) dto.DetectionDataResponse
 
 func ToDetectionPaginationResponse(detections []entities.Detection, currentPage, limit uint64) dto.GetDetectionResponse {
 	var items []dto.DetectionDataResponse
+	var totalCount uint64
+
+	if len(detections) > 0 {
+		totalCount = detections[0].TotalCount
+	}
+
 	for _, det := range detections {
 		item := dto.DetectionDataResponse{
 			ID:        det.ID,
@@ -47,6 +57,7 @@ func ToDetectionPaginationResponse(detections []entities.Detection, currentPage,
 			Method:    det.Method,
 			Status:    DetectionStatusMapper[det.IsDeepFake],
 			CreatedAt: det.CreatedAt,
+			IsBanned:  det.IsBanned,
 		}
 
 		if det.IsDeepFake {
@@ -57,7 +68,73 @@ func ToDetectionPaginationResponse(detections []entities.Detection, currentPage,
 
 	return dto.GetDetectionResponse{
 		CurrentPage: currentPage,
-		TotalItems:  items,
+		Items:       items,
 		Limit:       limit,
+		TotalPage:   math.Ceil(float64(totalCount) / float64(limit)),
 	}
+}
+
+func ToCustomerUsageHourlyResponse(raw []dto.CustomerUsage, now time.Time) []dto.CustomerUsage {
+	usageMap := make(map[string]uint32)
+	for _, u := range raw {
+		usageMap[u.Time] = u.Usage
+	}
+
+	currentHour := now.Hour()
+	var result []dto.CustomerUsage
+
+	for h := 0; h <= currentHour; h++ {
+		label := fmt.Sprintf("%02d:00", h)
+		usage := usageMap[label]
+		result = append(result, dto.CustomerUsage{
+			Time:  label,
+			Usage: usage,
+		})
+	}
+
+	return result
+}
+
+func ToCustomerUsageDailyResponse(raw []dto.CustomerUsage, days int) []dto.CustomerUsage {
+	usageMap := make(map[string]int)
+	for _, u := range raw {
+		usageMap[u.Time] = int(u.Usage)
+	}
+
+	var result []dto.CustomerUsage
+
+	for i := days - 1; i >= 0; i-- {
+		date := time.Now().AddDate(0, 0, -i)
+		label := date.Format("2006-01-02")
+		usage := usageMap[label]
+
+		result = append(result, dto.CustomerUsage{
+			Time:  label,
+			Usage: uint32(usage),
+		})
+	}
+
+	return result
+}
+
+func ToCustomerUsageWeeklyResponse(raw []dto.CustomerUsage, weeks int) []dto.CustomerUsage {
+	usageMap := make(map[string]int)
+	for _, u := range raw {
+		usageMap[u.Time] = int(u.Usage)
+	}
+
+	var result []dto.CustomerUsage
+
+	for i := (weeks * 7) - 2; i >= 0; i-- {
+		date := time.Now().AddDate(0, 0, -i)
+		label := date.Format("2006-01-02")
+		usage := usageMap[label]
+
+		result = append(result, dto.CustomerUsage{
+			Time:  label,
+			Usage: uint32(usage),
+		})
+	}
+
+	return result
 }
