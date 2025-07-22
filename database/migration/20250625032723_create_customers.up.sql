@@ -3,7 +3,7 @@ CREATE TABLE customers (
     order_id VARCHAR(36) NOT NULL DEFAULT 'free',
     customer_tier SMALLINT NOT NULL CHECK (customer_tier IN (0, 1, 2)), 
     hashed_key VARCHAR(96) NOT NULL,
-    prefix VARCHAR(32) NOT NULL DEFAULT 'client',
+    prefix VARCHAR(32) NOT NULL UNIQUE DEFAULT 'client',
     current_usage INT NOT NULL DEFAULT 0 CHECK (current_usage <= monthly_limit AND current_usage >= 0),
     monthly_limit INT NOT NULL DEFAULT 100,
     expires_at TIMESTAMPTZ NOT NULL,
