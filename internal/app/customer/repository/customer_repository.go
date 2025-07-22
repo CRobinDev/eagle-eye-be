@@ -148,3 +148,26 @@ func (cr *customerRepository) UpdateUsage(ctx context.Context, prefix string) (e
 
 	return customer, nil
 }
+
+func (cr *customerRepository) GetCustomerTier(ctx context.Context, customerID uuid.UUID) (entities.CustomerTier, error) {
+	query, args, err := squirrel.
+		Select("customer_tier").
+		From("customers").
+		Where(squirrel.Eq{
+			"id": customerID,
+		}).
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+
+	if err != nil {
+		return 0, err
+	}
+
+	var tier entities.CustomerTier
+	err = cr.conn.GetContext(ctx, &tier, query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	return tier, nil
+}
