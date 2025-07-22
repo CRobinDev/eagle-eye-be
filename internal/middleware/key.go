@@ -1,18 +1,20 @@
 package middleware
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/CRobinDev/karsa/config/env"
-	"github.com/CRobinDev/karsa/domain/entities"
+	"github.com/CRobinDev/karsa/domain/dto"
 	"github.com/CRobinDev/karsa/domain/interfaces"
 	"github.com/CRobinDev/karsa/pkg/errorz"
 	"github.com/CRobinDev/karsa/pkg/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sirupsen/logrus"
 )
 
-func ValidateKey(cr interfaces.ICustomerRepository) fiber.Handler {
+func ValidateKey(cs interfaces.ICustomerService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		apiKey := c.Get(env.GetEnv().HttpHeader)
 		if apiKey == "" {
@@ -33,20 +35,25 @@ func ValidateKey(cr interfaces.ICustomerRepository) fiber.Handler {
 
 		hashedApiKey := utils.HashAPIKey(prefix, key)
 
-		customer, err := cr.UpdateUsage(c.UserContext(), prefix)
+		customer, err := cs.UpdateUsage(c.UserContext(), dto.UpdateUsageRequest{
+			Prefix: prefix,
+		})
+
 		if err != nil {
+			var pqErr *pgconn.PgError
+			if errors.As(err, &pqErr) {
+				if pqErr.ConstraintName == "customers_check" {
+					return errorz.ErrMonthlyLimitReached
+				}
+			}
 			return errorz.ErrFailedToUpdateUsage
 		}
 
-		if customer.CurrentUsage >= uint64(customer.MonthlyLimit) {
-			return errorz.ErrMonthlyLimitReached
-		}
-
-		if customer.ApiKey != hashedApiKey || customer.Prefix != prefix {
+		if customer.HashedKey != hashedApiKey || customer.Prefix != prefix {
 			return errorz.ErrMismatchAPIKey
 		}
 
-		var cust entities.Customer
+		var cust dto.UpdateUsageResponse
 		if cust == customer {
 			logrus.Error("customer is empty.")
 			return errorz.ErrUserNotFound
