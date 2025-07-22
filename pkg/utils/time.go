@@ -8,6 +8,15 @@ import (
 	"log"
 )
 
+func GetTimeLocation() *time.Location {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		log.Fatalf("Error loading location: %v", err)
+	}
+
+	return loc
+}
+
 func GetCurrentTime() time.Time {
 
 	loc, err := time.LoadLocation("Asia/Jakarta")
