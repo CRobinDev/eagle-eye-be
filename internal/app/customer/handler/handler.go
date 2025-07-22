@@ -21,6 +21,7 @@ func NewCustomerHandler(cs interfaces.ICustomerService, val validator.Validator)
 
 func (cs *customerHandler) SetEndpoint(router fiber.Router) {
 	v1 := router.Group("/customers")
+	v1.Get("/get-customer-tier", middleware.Authenticate(), cs.GetCustomerTier)
 	v1.Get("/key-status", middleware.Authenticate(), cs.GetCustomerAPIKeyStatus)
 	v1.Get("/api-calls", middleware.Authenticate(), cs.GetCustomerTotalAPICalls)
 	v1.Post("/generate-key", middleware.Authenticate(), cs.GenerateAPIKey)

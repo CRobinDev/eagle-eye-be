@@ -7,9 +7,8 @@ import (
 )
 
 type GenerateAPIKeyRequest struct {
-	UserID       uuid.UUID `json:"user_id"`
-	CustomerTier string    `json:"customer_tier" validate:"required,oneof=free basic premium"`
-	Prefix       string    `json:"prefix" validate:"required,min=8,max=50"`
+	UserID uuid.UUID `json:"user_id"`
+	Prefix string    `json:"prefix" validate:"required,min=8,max=50"`
 }
 
 type GenerateAPIKeyResponse struct {
@@ -29,4 +28,22 @@ type GetCustomerAPIStatusResponse struct {
 type GetCustomerTotalCallsResponse struct {
 	TotalCalls uint64    `json:"total_calls"`
 	ExpiresAt  time.Time `json:"expires_at"`
+}
+
+type GetCustomerTierResponse struct {
+	Tier string `json:"tier"`
+}
+
+type UpdateUsageRequest struct {
+	Prefix string
+}
+
+type UpdateUsageResponse struct {
+	ID           uuid.UUID
+	CustomerTier string
+	HashedKey    string
+	Prefix       string
+	CurrentUsage uint64
+	MonthlyLimit uint32
+	LastUsed     time.Time
 }
