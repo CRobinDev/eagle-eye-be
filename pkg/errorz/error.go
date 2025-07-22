@@ -85,6 +85,7 @@ var (
 	ErrFailedToSaveCustomer  = NewError(fiber.StatusInternalServerError, "Failed to save customer information. Please try again later.")
 	ErrFailedToUpdateAPIKey  = NewError(fiber.StatusInternalServerError, "Failed to update api key. Please try again later.")
 	ErrCustomerNotRegistered = NewError(fiber.StatusNotFound, "There is no customer for your account. Please try to subcribe first !")
+	ErrDuplicatePrefix       = NewError(fiber.StatusConflict, "This prefix already exists. Please choose a different one.")
 
 	// Detection Errors
 	ErrMissingAPIKey              = NewError(fiber.StatusUnauthorized, "Key Empty. Please try again later!")
@@ -99,6 +100,8 @@ var (
 	ErrBanIP                      = NewError(fiber.StatusInternalServerError, "Failed to ban ip. Please try again later.")
 	ErrFailedToUpdateUsage        = NewError(fiber.StatusInternalServerError, "Failed to update customer usage. Please try again later.")
 	ErrMonthlyLimitReached        = NewError(fiber.StatusPaymentRequired, "Monthly limit reached. Please subscribe to a higher tier.")
+	ErrBanned                     = NewError(fiber.StatusForbidden, "You have been banned. Please contact your application provider.")
+	ErrFailedToGetDetection       = NewError(fiber.StatusInternalServerError, "Failed to get detection by IP. Please try again later.")
 
 	// Other Errors
 	ErrFailedGenerateUUIDV7 = NewError(fiber.StatusInternalServerError, "Failed to generate UUIDV7 for User ID. Please try again later !")
