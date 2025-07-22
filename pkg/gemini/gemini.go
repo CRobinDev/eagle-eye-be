@@ -33,8 +33,15 @@ func (g *gemini) DetectDeepFakeImage(ctx context.Context, req dto.GeminiAnalyzeR
 
 	prompt := []*genai.Part{
 		{
-			Text: `Respond this message as an DeepFake Detector Expert. I will provide you an user image. 
-					I want you to predict if the image is DeepFake detected. Please also provide the confidence score. 
+			Text: fmt.Sprintf(`
+						Respond this message as an DeepFake Detector Expert. I will provide you an user image. 
+							Before this, my own detector model detected the data like this : 
+					{
+						"prediction": "%s",
+						"confidence": %.3f
+					},
+
+					With that information, I want you to predict if the image is DeepFake detected. Please also provide the confidence score. 
 						Please respond only in JSON format as shown below :   
 						{
 							"prediction": "fake",
@@ -46,6 +53,8 @@ func (g *gemini) DetectDeepFakeImage(ctx context.Context, req dto.GeminiAnalyzeR
 							"confidence" : 0.832
 						}.
 					`,
+				req.Predict, req.Confidence,
+			),
 		},
 	}
 
@@ -56,7 +65,12 @@ func (g *gemini) DetectDeepFakeAudio(ctx context.Context, req dto.GeminiAnalyzeR
 
 	prompt := []*genai.Part{
 		{
-			Text: `Respond this message as an DeepFake Detector Expert. I will provide you an user audio. 
+			Text: fmt.Sprintf(`Respond this message as an DeepFake Detector Expert. I will provide you an user audio. 
+						Before this, my own detector model detected the data like this : 
+					{
+						"prediction": "%s",
+						"confidence": %.3f
+					},	
 					I want you to predict if the audio is DeepFake detected. Please also provide the confidence score. 
 						Please respond only in JSON format as shown below :   
 						{
@@ -69,6 +83,8 @@ func (g *gemini) DetectDeepFakeAudio(ctx context.Context, req dto.GeminiAnalyzeR
 							"confidence" : 0.832
 						}.
 					`,
+				req.Predict, req.Confidence,
+			),
 		},
 	}
 
