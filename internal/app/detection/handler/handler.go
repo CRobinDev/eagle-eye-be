@@ -9,14 +9,14 @@ import (
 
 type detectionHandler struct {
 	ds  interfaces.IDetectionService
-	cr  interfaces.ICustomerRepository
+	cs  interfaces.ICustomerService
 	val validator.Validator
 }
 
-func NewDetectionHandler(ds interfaces.IDetectionService, cr interfaces.ICustomerRepository, val validator.Validator) *detectionHandler {
+func NewDetectionHandler(ds interfaces.IDetectionService, cs interfaces.ICustomerService, val validator.Validator) *detectionHandler {
 	return &detectionHandler{
 		ds:  ds,
-		cr:  cr,
+		cs:  cs,
 		val: val,
 	}
 }
@@ -27,8 +27,8 @@ func (dh *detectionHandler) SetEndpoint(router fiber.Router) {
 	v1.Get("/get-detected", middleware.Authenticate(), middleware.RequiredOneOfRoles(), dh.GetDetectedDeepFake)
 	v1.Get("/get-details/:id", middleware.Authenticate(), middleware.RequiredOneOfRoles(), dh.GetDetectionByID)
 	v1.Get("/get-customer-usage", middleware.Authenticate(), middleware.RequiredOneOfRoles(), dh.CustomerUsage)
-	v1.Post("/detect-image", middleware.ValidateKey(dh.cr), dh.DetectDeepFakeImage)
-	v1.Post("/detect-audio", middleware.ValidateKey(dh.cr), dh.DetectDeepFakeAudio)
-	v1.Patch("/unban-ip/:id", middleware.Authenticate(), dh.UnbanIP)
-	v1.Delete("/ban-ip/:id", middleware.Authenticate(), dh.BanIP)
+	v1.Post("/detect-image", middleware.ValidateIP(dh.ds), middleware.ValidateKey(dh.cs), dh.DetectDeepFakeImage)
+	v1.Post("/detect-audio", middleware.ValidateIP(dh.ds), middleware.ValidateKey(dh.cs), dh.DetectDeepFakeAudio)
+	v1.Patch("/unban-ip", middleware.Authenticate(), dh.UnbanIP)
+	v1.Delete("/ban-ip/:ip", middleware.Authenticate(), dh.BanIP)
 }

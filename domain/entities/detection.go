@@ -16,9 +16,11 @@ type Detection struct {
 	StatusCode uint16       `db:"status_code"`
 	Type       string       `db:"type"`
 	Confidence float32      `db:"confidence"`
+	IsBanned   bool         `db:"is_banned"`
 	IsDeepFake bool         `db:"is_deepfake"`
 	CreatedAt  time.Time    `db:"created_at"`
 	DeletedAt  sql.NullTime `db:"deleted_at"`
+	TotalCount uint64       `db:"total_count"`
 
 	Customer Customer `db:"-"`
 }

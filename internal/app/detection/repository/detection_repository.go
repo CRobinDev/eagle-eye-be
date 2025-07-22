@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/CRobinDev/karsa/domain/dto"
@@ -25,8 +26,8 @@ func NewDetectionRepository(conn *sqlx.DB) interfaces.IDetectionRepository {
 func (dr *detectionRepository) CreateDetection(ctx context.Context, detection *entities.Detection) error {
 	query, values, err := squirrel.
 		Insert("detections").
-		Columns("ip_address", "customer_id", "path", "method", "status_code", "type", "confidence").
-		Values(detection.IPAddress, detection.CustomerID, detection.Path, detection.Method, detection.StatusCode, detection.Type, detection.Confidence).
+		Columns("ip_address", "customer_id", "path", "method", "status_code", "type", "confidence", "is_deepfake").
+		Values(detection.IPAddress, detection.CustomerID, detection.Path, detection.Method, detection.StatusCode, detection.Type, detection.Confidence, detection.IsDeepFake).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
@@ -43,10 +44,10 @@ func (dr *detectionRepository) CreateDetection(ctx context.Context, detection *e
 	return nil
 
 }
+
 func (dr *detectionRepository) GetDetection(ctx context.Context, filter dto.GetDetectionFilter) ([]entities.Detection, error) {
-	queryBuilder := squirrel.Select("id", "ip_address", "path", "status_code", "type", "method", "is_deepfake", "created_at").
-		From("detections").
-		Where(squirrel.Expr("deleted_at IS NULL"))
+	queryBuilder := squirrel.Select("id", "ip_address", "path", "status_code", "type", "method", "is_deepfake", "is_banned", "created_at", "COUNT(*) OVER() AS total_count").
+		From("detections")
 
 	if filter.CustomerID != uuid.Nil {
 		queryBuilder = queryBuilder.
@@ -99,12 +100,37 @@ func (dr *detectionRepository) GetDetectionByID(ctx context.Context, id uint16) 
 	return detection, err
 }
 
-func (dr *detectionRepository) DeleteDetection(ctx context.Context, id uint16) error {
+func (dr *detectionRepository) GetDetectionByIP(ctx context.Context, ip string) (entities.Detection, error) {
+	query, args, err := squirrel.
+		Select("is_banned").
+		From("detections").
+		Where(squirrel.Eq{
+			"ip_address": ip,
+		}).
+		OrderBy("created_at DESC").
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+
+	if err != nil {
+		return entities.Detection{}, err
+	}
+
+	var detection entities.Detection
+	err = dr.conn.GetContext(ctx, &detection, query, args...)
+	if err != nil {
+		return entities.Detection{}, err
+	}
+
+	return detection, err
+}
+
+func (dr *detectionRepository) DeleteDetection(ctx context.Context, ip net.IP) error {
 	query, values, err := squirrel.
 		Update("detections").
 		Set("deleted_at", squirrel.Expr("NOW()")).
+		Set("is_banned", true).
 		Where(squirrel.Eq{
-			"id": id,
+			"ip_address": ip.String(),
 		}).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
@@ -122,12 +148,13 @@ func (dr *detectionRepository) DeleteDetection(ctx context.Context, id uint16) e
 	return nil
 }
 
-func (dr *detectionRepository) UndeleteDetection(ctx context.Context, id uint16) error {
+func (dr *detectionRepository) UndeleteDetection(ctx context.Context, ip net.IP) error {
 	query, values, err := squirrel.
 		Update("detections").
 		Set("deleted_at", nil).
+		Set("is_banned", false).
 		Where(squirrel.Eq{
-			"id": id,
+			"ip_address": ip.String(),
 		}).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
@@ -146,10 +173,11 @@ func (dr *detectionRepository) UndeleteDetection(ctx context.Context, id uint16)
 }
 
 func (dr *detectionRepository) GetDeepFakeDetected(ctx context.Context, filter dto.GetDetectionFilter) ([]entities.Detection, error) {
-	queryBuilder := squirrel.Select("id", "type", "ip_address", "path", "method", "status_code", "is_deepfake", "created_at").
+	queryBuilder := squirrel.Select("id", "type", "ip_address", "path", "method", "status_code", "is_deepfake", "is_banned", "created_at", "COUNT(*) OVER() AS total_count").
 		From("detections").
-		Where(squirrel.Eq{"is_deepfake": true}).
-		Where(squirrel.Expr("deleted_at IS NULL"))
+		Where(squirrel.Eq{
+			"is_deepfake": true,
+		})
 
 	if filter.CustomerID != uuid.Nil {
 		queryBuilder = queryBuilder.
@@ -231,16 +259,15 @@ func (dr *detectionRepository) GetDailyUsage(ctx context.Context, customerID uui
 }
 
 func (dr *detectionRepository) GetWeeklyUsage(ctx context.Context, customerID uuid.UUID, weeks int) ([]dto.CustomerUsage, error) {
-
 	startDate := time.Now().AddDate(0, 0, -weeks*7).Format("2006-01-02")
 
 	query, args, err := squirrel.
-		Select("TO_CHAR(created_at, 'YYYY-MM-DD') AS time", "COUNT(*) AS usage").
+		Select("DATE_TRUNC('week', created_at)::DATE AS week_start, COUNT(*) AS usage").
 		From("detections").
 		Where(squirrel.Eq{"customer_id": customerID}).
 		Where(squirrel.Expr("created_at >= ? AND created_at <= NOW()", startDate)).
-		GroupBy("time").
-		OrderBy("time").
+		GroupBy("week_start").
+		OrderBy("week_start").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
@@ -262,7 +289,7 @@ func (dr *detectionRepository) GetMonthlyUsage(ctx context.Context, customerID u
 	startDate := time.Now().AddDate(0, -months, 0).Format("2006-01-02")
 
 	query, args, err := squirrel.
-		Select("TO_CHAR(created_at, 'YYYY-MM-DD') AS time", "COUNT(*) AS usage").
+		Select("TO_CHAR(created_at, 'YYYY-MM') AS time", "COUNT(*) AS usage").
 		From("detections").
 		Where(squirrel.Eq{"customer_id": customerID}).
 		Where(squirrel.Expr("created_at >= ? AND created_at <= NOW()", startDate)).
