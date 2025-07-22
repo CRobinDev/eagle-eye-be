@@ -36,6 +36,10 @@ func (ps *paymentService) CreatePayment(ctx context.Context, req dto.PaymentRequ
 	orderID := uuid.NewString()
 
 	tier := entities.ValueOfCustomerTier(req.TierOrder)
+	if tier == entities.CustomerTierUnknown {
+		ps.logger.Warnf("Invalid customer tier : %v", req.TierOrder)
+		return dto.PaymentResponse{}, errorz.ErrInvalidCustomerTier
+	}
 	amount := float64(entities.TierPrice(tier))
 
 	req.OrderID = orderID
@@ -146,5 +150,6 @@ func (ps *paymentService) LatestPaymentStatus(ctx context.Context, req dto.GetPa
 	return dto.PaymentResponse{
 		OrderID: resp.OrderID,
 		Status:  resp.Status,
+		Tier:    resp.Tier,
 	}, nil
 }

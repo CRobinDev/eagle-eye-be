@@ -32,6 +32,7 @@ type PaymentResponse struct {
 	SnapURL string `json:"snap_url,omitempty"`
 	OrderID string `json:"order_id"`
 	Status  string `json:"status"`
+	Tier    string `json:"tier,omitempty"`
 }
 
 type PaymentEmailNotification struct {

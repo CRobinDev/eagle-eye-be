@@ -138,7 +138,7 @@ func (pr *paymentRepository) GetStatusByOrderID(ctx context.Context, orderID str
 
 func (pr *paymentRepository) GetStatusByUserID(ctx context.Context, userID uuid.UUID) (entities.Payment, error) {
 	query, args, err := squirrel.
-		Select("status", "order_id").
+		Select("status", "order_id", "tier").
 		From("payments").
 		Where(squirrel.Eq{
 			"user_id": userID,
