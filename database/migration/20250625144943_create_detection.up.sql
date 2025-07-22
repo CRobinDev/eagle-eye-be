@@ -7,6 +7,7 @@ CREATE TABLE detections (
     status_code SMALLINT NOT NULL,
     type VARCHAR(32) NOT NULL default 'unknown',
     confidence NUMERIC(10,9),
+    is_banned BOOLEAN NOT NULL default false,
     is_deepfake BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
