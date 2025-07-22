@@ -97,7 +97,7 @@ func (s *ServerConfig) DependencyInjection() {
 
 	detectionRepository := repository.NewDetectionRepository(s.db)
 	detectionService := service.NewDetectionService(detectionRepository, geminiService, s.logger)
-	detectionHandler := handler.NewDetectionHandler(detectionService, customerRepository, s.val)
+	detectionHandler := handler.NewDetectionHandler(detectionService, customerService, s.val)
 
 	s.handlers = []Handler{
 		userHandler,
