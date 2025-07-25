@@ -32,7 +32,7 @@ func NewLogger() *logrus.Logger {
 				repopath, _ := os.Getwd()
 				repopath = filepath.ToSlash(repopath) + "/"
 				filename := strings.Replace(f.File, repopath, " ", 1)
-				return "", fmt.Sprintf("%s:%d", filename, f.Line) 
+				return "", fmt.Sprintf("%s:%d", filename, f.Line)
 			},
 			ForceColors:      true,
 			QuoteEmptyFields: true,
@@ -63,8 +63,14 @@ func NewLogger() *logrus.Logger {
 }
 
 func WithTraceID(traceID uuid.UUID, err error) logrus.Fields {
-	return logrus.Fields{
-		"error":    err,
-		"trace_id": traceID,
+	if err == nil {
+		return logrus.Fields{
+			"trace_id": traceID,
+		}
+	} else {
+		return logrus.Fields{
+			"error":    err,
+			"trace_id": traceID,
+		}
 	}
 }
