@@ -90,6 +90,8 @@ func (ds *detectionService) DetectDeepFakeImage(ctx context.Context, req dto.Det
 		return dto.DetectionResponse{}, errorz.ErrFailedToCreateDetection.WithTraceID(traceID)
 	}
 
+	ds.logger.WithFields(log.WithTraceID(traceID, nil)).Infof("[DetectionService][DetectDeepFake] last comparison, confidence : %v, prediction : %v", confidence, prediction)
+
 	return dto.DetectionResponse{
 		Filename:   resp.Filename,
 		Prediction: prediction,
@@ -113,6 +115,8 @@ func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.Det
 		return dto.DetectionResponse{}, fmt.Errorf("detectResp struct empty. Failed to unmarshal : %v", fiber.StatusInternalServerError)
 	}
 
+	ds.logger.WithFields(log.WithTraceID(traceID, nil)).Infof("[DetectionService][DetectDeepFakeAudio] response from model: %v", resp)
+
 	geminiReq := dto.GeminiAnalyzeRequest{
 		File:        fileBytes,
 		ContentType: req.File.Header.Get("Content-Type"),
@@ -134,6 +138,8 @@ func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.Det
 		return dto.DetectionResponse{}, err
 	}
 
+	ds.logger.WithFields(log.WithTraceID(traceID, nil)).Infof("[DetectionService][DetectDeepFakeAudio] response from gemini: %v", geminiResp)
+
 	isDeepFake, prediction, confidence := ds.compareResult(geminiResp, resp)
 
 	detection.IsDeepFake = isDeepFake
@@ -143,6 +149,8 @@ func (ds *detectionService) DetectDeepFakeAudio(ctx context.Context, req dto.Det
 		ds.logger.WithFields(log.WithTraceID(traceID, err)).Error("[DetectionService][DetectDeepFake] failed to create detection history")
 		return dto.DetectionResponse{}, errorz.ErrFailedToCreateDetection.WithTraceID(traceID)
 	}
+
+	ds.logger.WithFields(log.WithTraceID(traceID, nil)).Infof("[DetectionService][DetectDeepFakeAudio] last comparison, confidence : %v, prediction : %v", confidence, prediction)
 
 	return dto.DetectionResponse{
 		Filename:   resp.Filename,
