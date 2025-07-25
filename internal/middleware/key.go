@@ -18,11 +18,13 @@ func ValidateKey(cs interfaces.ICustomerService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		apiKey := c.Get(env.GetEnv().HttpHeader)
 		if apiKey == "" {
+			logrus.Errorf("missing api key : %v", apiKey)
 			return errorz.ErrMissingAPIKey
 		}
 
 		splitter := strings.Split(apiKey, "_")
 		if len(splitter) != 2 {
+			logrus.Error("invalid api key")
 			return errorz.ErrInvalidAPIKey
 		}
 
@@ -30,6 +32,7 @@ func ValidateKey(cs interfaces.ICustomerService) fiber.Handler {
 		key := splitter[1]
 
 		if len(key) != 64 {
+			logrus.Error("unauthorized api key")
 			return errorz.ErrUnauthorized
 		}
 
@@ -43,13 +46,16 @@ func ValidateKey(cs interfaces.ICustomerService) fiber.Handler {
 			var pqErr *pgconn.PgError
 			if errors.As(err, &pqErr) {
 				if pqErr.ConstraintName == "customers_check" {
+					logrus.Errorf("monthly limit reached for user %v", customer.ID)
 					return errorz.ErrMonthlyLimitReached
 				}
 			}
+			logrus.Errorf("failed to update usage : %v", err)
 			return errorz.ErrFailedToUpdateUsage
 		}
 
 		if customer.HashedKey != hashedApiKey || customer.Prefix != prefix {
+			logrus.Error("unauthorized api key")
 			return errorz.ErrMismatchAPIKey
 		}
 
